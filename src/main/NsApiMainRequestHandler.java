@@ -7,16 +7,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
+import service.NSRestService;
 
 public class NsApiMainRequestHandler {
     public static final int maxThreads = 100;
@@ -26,7 +25,7 @@ public class NsApiMainRequestHandler {
     public static class TCallBackHandler extends AbstractHandler
 	{
 		static int h=0;
-		int hello=h++;
+		int visitor=h++;
 
 		@Override
 		public void handle(String arg0, Request base_request, HttpServletRequest request, HttpServletResponse response)
@@ -36,7 +35,7 @@ public class NsApiMainRequestHandler {
 			base_request.setHandled(true);
 			response.setStatus(HttpServletResponse.SC_OK);
 			response.setContentType("text/html");
-			response.getWriter().println("<h1> Hello Welcome to NS API </h1>"+hello+"");
+			response.getWriter().println("<h1> Welcome to NS API </h1>"+visitor+"");
 			
 		}
 	}
@@ -50,17 +49,29 @@ public class NsApiMainRequestHandler {
 		connector.setPort(8090);
 		server.setConnectors(new Connector[] {connector});
 		
+        /*
 		ContextHandlerCollection contexts = new ContextHandlerCollection();
 		ContextHandler tcontext = new ContextHandler();
-		tcontext.setContextPath("/context");
+		tcontext.setContextPath("/");
+		tcontext.setInitParameter("jersey.config.server.provider.classname", NSRestService.class.getCanonicalName());
 		Handler tCallbackHandler = new TCallBackHandler();
 		tcontext.setHandler(tCallbackHandler);
 		contexts.addHandler(tcontext);
-		
 		HandlerCollection handlers = null;
 		handlers = new HandlerCollection();
 		handlers.setHandlers(new Handler[] {contexts, new DefaultHandler() });
-		server.setHandler(handlers);
+		*/
+		
+		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+		context.setContextPath("/");
+		ServletHolder jerseyServlet = context.addServlet(
+				org.glassfish.jersey.servlet.ServletContainer.class, "/*");
+		jerseyServlet.setInitOrder(0);
+		jerseyServlet.setInitParameter(
+				"jersey.config.server.provider.classnames", 
+				NSRestService.class.getCanonicalName());
+ 
+		server.setHandler(context);
 		server.start();
 		server.setStopAtShutdown(true);
 		}
